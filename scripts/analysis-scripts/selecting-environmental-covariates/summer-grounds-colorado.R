@@ -297,3 +297,54 @@ results.5$results$beta
 
 # Remove mark files so they don't clog repo
 invisible(file.remove(list.files(pattern = 'mark.*\\.(inp|out|res|vcv|tmp)$')))
+
+# Selected covariates for the next step in model selection:
+#   aver max temp
+#   aver min temp
+#   frost days
+
+# Check for correlation of covariates 
+
+# Between summer min temp and summer frost days, as they are both a temperature
+# related variable that will go together in the full model
+
+cor.test(summer.co.stand$aver_min_temp_z, summer.co.stand$frost_days_z)
+# Highly significant negative correlation, r= -0.88, p < 0.001
+
+# Identify which one of the correlated covariates has an effect on survival
+
+# Create function to run models
+correlated.covars <- function()
+{
+  Phi.sex <- list(formula = ~sex)
+  Phi.sexFrostDays <- list(formula = ~sex + frost_days_z)
+  Phi.sexMinTemp <- list(formula = ~sex + aver_min_temp_z)
+  
+  p.sexeffort <- list(formula = ~effort_hours_z)
+  
+  # Create a data frame of all combinations of parameter specifications for each 
+  # parameter
+  cml <- create.model.list('CJS')  
+  
+  # Construct and run a set of MARK models from the cml data frame
+  results <- mark.wrapper(cml, 
+                          data = ahy.process,
+                          ddl = ahy.ddl,
+                          adjust = FALSE) # Accepts the parameter counts from MARK
+  return(results)
+}
+
+# Run the function
+correlated.covars.results <- correlated.covars()
+correlated.covars.results
+
+# Model with lowest Delta AIC 
+# Phi(~sex + aver_min_temp_z)p(~effort_hours_z) 0.0
+# Followed by 
+# Phi(~sex + frost_days_z)p(~effort_hours_z) 5.92 
+
+# Based on delta AIC I'm selecting aver min temp to go in the next step for 
+# model selection 
+
+# Remove mark files so they don't clog repo
+invisible(file.remove(list.files(pattern = 'mark.*\\.(inp|out|res|vcv|tmp)$')))
