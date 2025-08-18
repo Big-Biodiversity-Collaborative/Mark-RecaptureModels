@@ -200,7 +200,7 @@ results.3$results$beta
 # The probability of detection increases with effort (+, barely not significant)
 
 # Look at estimates and standard errors of third best model
-results.4 <- ahy.p.1.results[[4]]
+results.4 <- ahy.p.2.results[[4]]
 results.4$results$beta
 
 # The probability of detection doesn't differ by sex (b = 0.02, not significant) 
