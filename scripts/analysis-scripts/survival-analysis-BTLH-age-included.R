@@ -644,6 +644,13 @@ ggsave(path = 'output/plots/New Plots Survival/',
        device = 'png',
        dpi = 300)
 
+# Calculate mean annual survival
+mean.annual.survival <- real.Phi.ests %>%
+  group_by(group) %>%
+  summarise(mean_estimate = mean(estimate),
+            mean_lcl = mean(lcl),
+            mean_ucl = mean(ucl))
+
 # 2) Recapture probability
 
 # Plot recapture probability
@@ -712,6 +719,15 @@ names(betas) <- phi.betas$term
 # To calculate confidence intervals for predictions by hand, we'll need the 
 # variance-covariate matrix. Extract the values for Phi [1:9]
 var.covar.matrix <- results.10$results$beta.vcv[1:9, 1:9]
+
+# Calculate the odds for all beta estimates to report in results
+
+# Convert estimates to odds ratios
+odds.ratios <- exp(betas)
+
+# Calculate the percent change in odds
+percent.change <- (odds.ratios - 1) * 100
+percent.change
 
 
 # -------------------------------- Create plots ------------------------------ #
