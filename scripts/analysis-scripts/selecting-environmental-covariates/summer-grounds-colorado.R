@@ -106,6 +106,7 @@ winter.co <- read.csv('output/weather-data/covariates-output/winter-swe-colorado
 
 # Standardize summer covariates in Co
 summer.co.stand <- summer.co %>%
+  filter(!year %in% c(2002, 2012)) %>% 
   mutate(aver_max_temp_z = z.stand(aver_max_temp),
          aver_min_temp_z = z.stand(aver_min_temp),
          aver_daily_max_temp_z = z.stand(aver_daily_max_temp),
@@ -118,8 +119,9 @@ summer.co.stand <- summer.co %>%
   rename(time = year)
 
 # Standardize winter covariate in Co
-winter.co.stand <- winter.co %>% 
-  mutate(time = 2002:2012, .after = winter_period, # to match time in Phi
+winter.co.stand <- winter.co %>%
+  filter(!winter_period %in% c('2001-2002', '2011-2012')) %>% 
+  mutate(time = 2003:2011, .after = winter_period, # to match time in Phi
          swe_z = z.stand(total_swe_winter_co), .keep = 'unused') %>% 
   select(-winter_period)
 

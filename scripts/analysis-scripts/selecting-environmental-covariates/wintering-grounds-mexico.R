@@ -99,12 +99,13 @@ winter.mx <- read.csv('output/weather-data/covariates-output/winter-covar-mexico
 
 # Standardize winter mx covariates
 winter.mx.stand <- winter.mx %>% 
+  filter(winter_period != '2002-2003') %>% 
   mutate(aver_min_temp_z = z.stand(aver_min_temp),
          aver_daily_min_temp_z = z.stand(aver_daily_min_temp), 
          aver_cold_days_z = z.stand(aver_cold_days),
          aver_precip_z = z.stand(aver_precip),
          average_ndvi_z = z.stand(average_ndvi), .keep = 'unused') %>% 
-  mutate(time = 2002:2011, .after = winter_period) %>% # so time matches Phi
+  mutate(time = 2003:2011, .after = winter_period) %>% # so time matches Phi
   select(-winter_period)
 
 # ----------------- PROCESS CAPTURE HISTORIES FOR MARK ANALYSIS -------------- #
