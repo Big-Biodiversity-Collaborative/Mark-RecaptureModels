@@ -90,23 +90,60 @@ effort.z <- effort.raw %>%
 # Load data
 winter.mx <- read.csv('output/weather-data/covariates-output/winter-covar-mexico.csv')
 summer.co <- read.csv('output/weather-data/covariates-output/summer-covar-colorado.csv')
+summer.co.swe <- read.csv('output/weather-data/covariates-output/winter-swe-colorado.csv')
 
-# Prepare covariates for analysis 
-winter <- winter.mx %>% 
-  mutate(time = 2002:2011, .after = winter_period) %>%
+# Z-standardize covariates for analysis
+winter.z <- winter.mx %>% 
+  filter(winter_period != '2002-2003') %>%
+  mutate(time = 2003:2011, .after = winter_period) %>%
   select(time, aver_min_temp, aver_precip) %>% 
   mutate(winter_min_temp_z = z.stand(aver_min_temp),
          winter_precip_z = z.stand(aver_precip),
          winter_min_temp = aver_min_temp,
          winter_aver_precip = aver_precip, .keep = 'unused')
 
-summer <- summer.co %>% 
+summer.z <- summer.co %>% 
+  filter(!year %in% c(2002, 2012)) %>% 
   select(year, aver_max_temp, aver_min_temp) %>% 
   rename(time = year) %>% 
   mutate(summer_min_temp_z = z.stand(aver_min_temp),
          summer_max_temp_z = z.stand(aver_max_temp),
          summer_aver_min_temp = aver_min_temp,
          summer_aver_max_temp = aver_max_temp, .keep = 'unused')
+
+# Prepare covariates for Table 5 in thesis results (mean and ranges)
+
+winter.full <- winter.mx %>% 
+  select(-winter_period) %>% 
+  pivot_longer(everything(), 
+               names_to = 'variable', 
+               values_to = 'value') %>% 
+  group_by(variable) %>% 
+  summarize(mean = round(mean(value), 2),
+            min  = round(min(value), 2),
+            max  = round(max(value), 2))
+
+summer.full <- summer.co %>% 
+  filter(year != 2002) %>% 
+  select(-year) %>% 
+  pivot_longer(everything(),
+               names_to = 'variable',
+               values_to = 'value') %>% 
+  group_by(variable) %>% 
+  summarize(mean = round(mean(value), 2),
+            min  = round(min(value), 2),
+            max  = round(max(value), 2))  
+
+summer.swe <- summer.co.swe %>% 
+  filter(winter_period != '2001-2002') %>%
+  select(-winter_period) %>% 
+  pivot_longer(everything(),
+               names_to = 'variable',
+               values_to = 'value') %>% 
+  group_by(variable) %>% 
+  summarize(mean = round(mean(value), 2),
+            min  = round(min(value), 2),
+            max  = round(max(value), 2))  
 
 # ----------------- PROCESS CAPTURE HISTORIES FOR MARK ANALYSIS -------------- #
 
@@ -153,11 +190,11 @@ age.ddl$p <- merge_design.covariates(age.ddl$p, effort.z)
 
 # Add winter covariates to ddl
 age.ddl$Phi <- merge_design.covariates(
-  age.ddl$Phi, winter)
+  age.ddl$Phi, winter.z)
 
 # Add summer covaraites to ddl
 age.ddl$Phi <- merge_design.covariates(
-  age.ddl$Phi, summer)
+  age.ddl$Phi, summer.z)
 
 # Create a couple of other variables to help with model construction
 
@@ -614,31 +651,36 @@ real.Phi.ests <- real.Phi.ests %>%
 Phi.plot <- ggplot(real.Phi.ests, aes(x = as.numeric(year), 
                                       y = estimate,
                                       color = group,
-                                      shape = group)) +
-  geom_line(aes(group = group), size = 0.3) +
+                                      shape = group,
+                                      linetype = group)) +
+  geom_line(aes(group = group), size = 0.6) +
   geom_point(size = 2) +
   geom_errorbar(aes(ymin = lcl, ymax = ucl), width = 0, linewidth = 0.3) +
-  scale_color_manual(values = c('Juvenile' = 'gray10', 
-                                'Adult Female' = 'gray26', 
-                                'Adult Male' = 'gray46')) +
+  # Colors from: 
+  # https://stackoverflow.com/questions/57153428/r-plot-color-combinations-that-are-colorblind-accessible
+  scale_color_manual(values = c('Juvenile' = '#009E73',    # bluish green
+                                'Adult Female' = '#0072B2', # blue
+                                'Adult Male' = '#E69F00')) + # orange
   scale_shape_manual(values = c('Juvenile' = 15,
                                 'Adult Female' = 17,  
-                                'Adult Male' = 19)) + 
-  
-  scale_y_continuous(limits = c(0,1), 
-                     breaks = seq(0, 1, 0.2)) +
+                                'Adult Male' = 19)) +
+  scale_linetype_manual(values = c('Juvenile' = 'solid',
+                                   'Adult Female' = 'longdash',
+                                   'Adult Male' = 'dotted')) +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, 0.2)) +
   scale_x_continuous(breaks = 2003:2011) +
   labs(x = 'Year',
-       y = 'Estimated annual survival probability\n(95% CI)',
-       shape = 'Group',
-       color = 'Group') +
+       y = 'Annual survival probability (95% CI)',
+       shape = NULL,
+       color = NULL,
+       linetype = NULL) +
   theme_classic() +
   theme(legend.position = 'right',
         plot.title = element_text(hjust = 0.5))
 Phi.plot
 
 # Save plot
-ggsave(path = 'output/plots/New Plots Survival/',
+ggsave(path = 'output/plots/Last Plots/',
        filename = 'survival.png',
        plot = Phi.plot,
        device = 'png',
@@ -684,7 +726,7 @@ ggsave(path = 'output/plots/New Plots Survival/',
 # ------------------- First, prepare data needed for the plots --------------- #
 
 # Merge covariables in a data frame
-covars <- left_join(winter, summer, by = 'time')
+covars <- left_join(winter.z, summer.z, by = 'time')
 
 # Extract Phi beta estimates
 phi.betas <- results.10$results$beta %>%
@@ -722,12 +764,15 @@ var.covar.matrix <- results.10$results$beta.vcv[1:9, 1:9]
 
 # Calculate the odds for all beta estimates to report in results
 
-# Convert estimates to odds ratios
-odds.ratios <- exp(betas)
-
-# Calculate the percent change in odds
-percent.change <- (odds.ratios - 1) * 100
-percent.change
+odds.table <- results.10$results$beta %>%
+  as.data.frame() %>%
+  rownames_to_column('parameter') %>%
+  mutate(odds_ratio  = exp(estimate),
+         odds_lcl    = exp(lcl),
+         odds_ucl    = exp(ucl),
+         pct_change  = (odds_ratio - 1) * 100,
+         pct_lcl     = (odds_lcl - 1) * 100,
+         pct_ucl     = (odds_ucl - 1) * 100)
 
 
 # -------------------------------- Create plots ------------------------------ #
@@ -794,28 +839,30 @@ winter.min.temp.plot <- ggplot(pred.df.winter.min.temp,
                                    color = Group,
                                    fill = Group,
                                    linetype = Group)) +
-  geom_line(size = 0.3) +
-  geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.1, color = NA) +
+  geom_line(size = 0.6) +
+  geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.15, color = NA) +
   scale_x_continuous(breaks = seq(-2, 1, by = 0.5)) +
-  labs(x = 'Average minimum temperature (°C) in wintering grounds',
-       y = 'Estimated survival probability\n(95% CI)',
-       color = 'Group',
-       fill = 'Group',
-       linetype = 'Group') +
-  scale_color_manual(values = c('Juvenile' = 'gray10', 
-                                'Adult Female' = 'gray26', 
-                                'Adult Male' = 'gray46')) +
-  scale_fill_manual(values = c('Juvenile' = 'gray10', 
-                               'Adult Female' = 'gray26', 
-                               'Adult Male' = 'gray46')) +
+  labs(x = 'Average winter minimum temperature (°C)',
+       y = 'Annual survival probability (95% CI)',
+       color = NULL,   
+       fill = NULL,    
+       linetype = NULL) +
+  scale_color_manual(values = c('Juvenile' = '#009E73',     
+                                'Adult Female' = '#0072B2', 
+                                'Adult Male' = '#E69F00')) +
+  scale_fill_manual(values = c('Juvenile' = '#009E73',
+                               'Adult Female' = '#0072B2',
+                               'Adult Male' = '#E69F00')) +
   scale_linetype_manual(values = c('Juvenile' = 'solid',
                                    'Adult Female' = 'longdash',
                                    'Adult Male' = 'dotted')) +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = 'right',
+        legend.title = element_blank()) 
 winter.min.temp.plot
 
 # Save plot
-ggsave(path = 'output/plots/New Plots Survival/',
+ggsave(path = 'output/plots/Last Plots/',
        filename = 'winter min temp effect.png',
        plot = winter.min.temp.plot,
        device = 'png',
