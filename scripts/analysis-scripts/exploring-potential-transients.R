@@ -135,3 +135,52 @@ filter(bird_months, first_cap == 'MJJ' & n_captures >= 2 & n_years > 2) %>%
 # AHY   1163
 # HY     432
 # Most are AHY birds. 
+
+
+# ---------------------------------------------------------------------------- #
+
+# For thesis writing, calculate the proportion of birds captured in each month
+
+# Keep only necessary columns and remove duplicates
+dat.2 <- raw.dat %>% 
+  select(band, band_status, year, month, day, obsdate, band_age) %>% 
+  distinct()
+
+# Identify first capture date for each bird
+bird.months.2 <- dat.2 %>%
+  group_by(band) %>%
+  summarize(n_captures = n(),
+            n_years = n_distinct(year),
+            first_date = min(obsdate[band_status == 1])) %>%
+  ungroup() %>%
+  mutate(first_month = month(first_date, label = TRUE, abbr = TRUE))  # Jan, Feb, etc.
+
+# Count birds first captured each month
+first.caps <- bird.months.2 %>%
+  count(first_month, name = "n_banded") %>%
+  mutate(percent = round(100 * n_banded / sum(n_banded), 1))
+
+# Add recapture summaries per month
+recap.summary <- bird.months.2 %>%
+  group_by(first_month) %>%
+  summarize(total_banded = n(),
+            recaptured = sum(n_captures >= 2),
+            true_recaptured = sum(n_years >= 2),
+            prop_true_recap = round(100 * true_recaptured / total_banded, 1)) %>%
+  ungroup()
+
+# Age structure per month of first capture
+age.summary <- raw.dat %>%
+  filter(band_status == 1) %>%
+  group_by(month = month(obsdate, label = TRUE, abbr = TRUE), band_age) %>%
+  summarize(n = n()) %>%
+  group_by(month) %>%
+  mutate(percent = round(100 * n / sum(n), 1)) %>%
+  ungroup()
+
+# View results
+first.caps
+recap.summary
+age.summary
+
+
