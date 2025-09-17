@@ -1,5 +1,4 @@
 "year","aver_max_temp","aver_min_temp","aver_daily_max_temp","aver_daily_min_temp","aver_warm_days","aver_cold_days","aver_precip","average_ndvi","frost_days"
-2002,30.18,-9.81,22.3,4.43,3,28,147.13,0.51,2
 2003,30.62,-4.79,21.24,5.11,5,31,226.94,0.57,0
 2004,28.45,-7.97,19.21,3.97,0,38,330.99,0.59,1
 2005,31.04,-9.44,20.57,4.49,4,35,237.1,0.6,3
