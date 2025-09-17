@@ -245,10 +245,6 @@ plot(winter.covar.mx$average_ndvi, winter.covar.mx$total_precip)
 cor.test(winter.covar.mx$aver_precip, winter.covar.mx$average_ndvi)
 # Moderate to strong positive correlation (0.659), statistically significant (p = 0.03818)
 
-# Select covariates
-winter.covar.mx.final <- winter.covar.mx %>% 
-  select(-c(aver_min_temp, average_ndvi))
-
 # Export winter covariates
 write.csv(winter.covar.mx, 
           'output/weather-data/covariates-output/winter-covar-mexico.csv',
@@ -263,7 +259,8 @@ write.csv(winter.covar.mx,
 # Daymet data set for summer months in the summer grounds 
 daymet.summer.co <- daymet %>% 
   filter(month %in% c(5, 6, 7, 8),
-         site %in% summer.sites$code) %>%
+         site %in% summer.sites$code,
+         year != 2002) %>%
   rename(code = site) %>% 
   left_join(select(summer.sites, code, site, location), by = 'code')
 
@@ -276,14 +273,15 @@ daymet.winter.co <- daymet %>%
   mutate(year_plus = ifelse(month == 12, year+1, year),
          year_less = year_plus-1) %>% 
   unite(winter_period, c(year_less, year_plus), sep = '-', remove = T) %>% 
-  filter(!winter_period %in% c('2012-2013'))
+  filter(!winter_period %in% c('2001-2002', '2012-2013'))
 
 # MODIS data set for summer months in summer grounds
 modis.summer.co <- modis %>%
   mutate(month = month(calendar_date),
          year = year(calendar_date)) %>% 
   filter(month %in% c(5, 6, 7, 8),
-         site_name %in% summer.sites$code) 
+         site_name %in% summer.sites$code,
+         year != 2002) 
 
 # Run functions to summarize covariates
 
@@ -400,11 +398,6 @@ plot(summer.covar.co$average_ndvi, summer.covar.co$aver_precip)
 cor.test(summer.covar.co$average_ndvi, summer.covar.co$aver_precip)
 # Moderate to strong positive correlation (0.697), statistically significant (0.01705) 
 
-# Select covariates 
-summer.covar.co.final <- summer.covar.co %>% 
-  select(-c(aver_max_temp, aver_min_temp, aver_warm_days, aver_daily_min_temp, 
-            average_ndvi))
-
 # Export summer covariates
 write.csv(summer.covar.co, 
           'output/weather-data/covariates-output/summer-covar-colorado.csv',
@@ -414,10 +407,7 @@ write.csv(summer.covar.co,
 write.csv(total.swe.co, 'output/weather-data/covariates-output/winter-swe-colorado.csv',
           row.names = FALSE)
 
-
-
-
-#######################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Warm days
 p1 <- ggplot(summer.covar.co, aes(year, aver_warm_days)) +
