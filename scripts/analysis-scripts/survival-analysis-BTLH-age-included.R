@@ -93,6 +93,8 @@ summer.co <- read.csv('output/weather-data/covariates-output/summer-covar-colora
 summer.co.swe <- read.csv('output/weather-data/covariates-output/winter-swe-colorado.csv')
 
 # Z-standardize covariates for analysis
+# Includes only selected covariates to include in full model
+
 winter.z <- winter.mx %>% 
   filter(winter_period != '2002-2003') %>%
   mutate(time = 2003:2011, .after = winter_period) %>%
@@ -111,7 +113,7 @@ summer.z <- summer.co %>%
          summer_aver_min_temp = aver_min_temp,
          summer_aver_max_temp = aver_max_temp, .keep = 'unused')
 
-# Prepare covariates for Table 5 in thesis results (mean and ranges)
+# Prepare covariates for Table 2 in thesis results (mean and ranges)
 
 winter.full <- winter.mx %>% 
   select(-winter_period) %>% 
@@ -124,7 +126,6 @@ winter.full <- winter.mx %>%
             max  = round(max(value), 2))
 
 summer.full <- summer.co %>% 
-  filter(year != 2002) %>% 
   select(-year) %>% 
   pivot_longer(everything(),
                names_to = 'variable',
@@ -135,7 +136,6 @@ summer.full <- summer.co %>%
             max  = round(max(value), 2))  
 
 summer.swe <- summer.co.swe %>% 
-  filter(winter_period != '2001-2002') %>%
   select(-winter_period) %>% 
   pivot_longer(everything(),
                names_to = 'variable',
@@ -680,7 +680,7 @@ Phi.plot <- ggplot(real.Phi.ests, aes(x = as.numeric(year),
 Phi.plot
 
 # Save plot
-ggsave(path = 'output/plots/Last Plots/',
+ggsave(path = 'output/plots/Thesis Plots/',
        filename = 'survival.png',
        plot = Phi.plot,
        device = 'png',
@@ -777,8 +777,8 @@ odds.table <- results.10$results$beta %>%
 
 # -------------------------------- Create plots ------------------------------ #
 
-# 3) Effect of winter average min temperature on probability of survival on each group 
-# (juveniles, adult females and adult males)
+# 3) Effect of winter average min temperature on probability of survival on each 
+# group (juveniles, adult females and adult males)
 
 # Build prediction data frame
 pred.df.winter.min.temp <- data.frame(
@@ -862,7 +862,7 @@ winter.min.temp.plot <- ggplot(pred.df.winter.min.temp,
 winter.min.temp.plot
 
 # Save plot
-ggsave(path = 'output/plots/Last Plots/',
+ggsave(path = 'output/plots/Thesis Plots/',
        filename = 'winter min temp effect.png',
        plot = winter.min.temp.plot,
        device = 'png',
