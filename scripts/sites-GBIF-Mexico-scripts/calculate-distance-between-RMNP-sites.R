@@ -164,3 +164,44 @@ summary(dists_west)
 # For now we are going to include all data from all sites in the survival analysis 
 # ignoring their location in the park and effort at each site 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Distance between 12 points retained for thesis
+
+# Remove sites that won't be part of the analysis
+sites.thesis <- sites %>% 
+  filter(!site %in% c('WPK1', 'WB1', 'WB2', 'SHIP', 'POLC', 'NFPC')) %>% 
+  select(-site_num)
+
+# Convert site locations to a SpatVector (spatial object)
+locs.thesis <- vect(sites.thesis, 
+                    geom = c('longitude', 'latitude'), crs = crs(breeding))
+
+# Calculate pairwise distances between points 
+
+# Add a site number to help organize things later
+sites.thesis$site_num <- 1:nrow(sites.thesis)
+
+# Convert site locations to a SpatVector (spatial object)
+locations.thesis <- vect(sites.thesis, 
+                         geom = c('longitude', 'latitude'), crs = 'EPSG:4326')
+
+# Calculate distance between all pairs of sites, in km
+dists.thesis <- distance(locations.thesis, 
+                         unit = 'km', 
+                         pairs = TRUE, 
+                         symmetrical = FALSE)
+
+# Note: by setting symmetrical = FALSE we're including pair once in 
+# the data frame (ie, distance between A and B is included, but not distance
+# between B and A). Could set = TRUE if you want to include both. 
+dists.thesis <- as.data.frame(dists.thesis)
+
+# Add site names to distance data frame for convenience
+dists.thesis$from_name <- sites.thesis$site[match(dists.thesis$from, sites.thesis$site_num)]
+dists.thesis$to_name <- sites.thesis$site[match(dists.thesis$to, sites.thesis$site_num)]
+
+# Explore distance data
+summary(dists)
+
+
