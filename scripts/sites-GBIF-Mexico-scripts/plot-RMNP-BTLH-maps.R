@@ -6,6 +6,8 @@
 # Load packages
 library(tidyverse)
 library(sf)
+library(ggrepel)
+library(patchwork)
 
 # Clear environment
 rm(list = ls())
@@ -39,11 +41,11 @@ winter.sf <- st_as_sf(winter.sites,
                       crs = st_crs(nonbreeding)) %>%
   mutate(point_type = 'BTLH sightings')
 
-# Combine summer and winter sites
-points.data <- bind_rows(summer.sf, winter.sf)
+# RMNP boundary
+rmnp.sf <- st_read('data/sites-BTLH-range-map/RMNP-boundary/Boundary_(Line).shp')
 
 # ---------------------- PLOT SUMMER AND WINTERING GROUNDS ------------------- # 
-# ---------------- INCLUDING BANDING SITES AND MEXICO SIGHTINGS -------------- #
+# ---------------- INCLUDING RMNP BOUNDARY AND MEXICO SIGHTINGS -------------- #
 
 # Create dummy data to force fill legend in the map
 legend.fill <- data.frame(x = c(0, 0),
@@ -52,23 +54,29 @@ legend.fill <- data.frame(x = c(0, 0),
 
 # Create map
 main.map <- ggplot() + 
-
+  
   # Plot breeding and non breeding range 
   geom_sf(data = breeding, 
-          fill = 'salmon', 
+          fill = '#f6b48f', # Pale orange, color blind friendly
           color = NA) +
   geom_sf(data = nonbreeding, 
-          fill = 'cadetblue', 
+          fill = '#a6d9ce', # Pale teal, color blind friendly
           color = NA) +
   
-  # Plot borders
-  borders('world', colour = 'gray20') +
-  borders('state', colour = 'gray20') +
+  # Add RMNP boundary
+  geom_sf(data = rmnp.sf,
+          aes(color = 'Rocky Mountain National Park Boundary'),
+          fill = NA,
+          size = 0.5) +
   
-  # Plot point data
-  geom_sf(data = points.data, 
+  # Plot borders
+  borders('world', colour = 'gray18') +
+  borders('state', colour = 'gray18') +
+  
+  # Plot GBIF sightings
+  geom_sf(data = winter.sf, 
           aes(shape = point_type), 
-          size = 2, 
+          size = 1.5, 
           color = 'gray18') +
   
   # Create invisible dummy tiles to create fill legend
@@ -76,109 +84,162 @@ main.map <- ggplot() +
             aes(x = x, y = y, fill = range_type),
             alpha = 0) +
   
-  # Manual fill colors for breeding and non breeding
-  scale_fill_manual(values = c('Breeding' = 'salmon', 
-                               'Nonbreeding' = 'cadetblue'),
-                    name = 'Range',
+  # Manually fill colors for breeding and non breeding
+  scale_fill_manual(values = c('Breeding' = '#f6b48f', 
+                               'Nonbreeding' = '#a6d9ce'),
+                    name = 'Broad-tailed Hummingbird Range',
                     labels = c('Breeding' = 'Summer Grounds', 
                                'Nonbreeding' = 'Wintering Grounds')) +
   
+  # Add color scale for RMNP outline
+  scale_color_manual(values = c('Rocky Mountain National Park Boundary' = 'gray18'),
+                     name = '') +
+  
   # Define point's shapes
-  scale_shape_manual(values = c('BTLH banding sites' = 16,  # Circle
-                                'BTLH sightings' = 17),     # Triangle
-                     name = 'BTLH Data') +
+  scale_shape_manual(values = c('BTLH sightings' = 17),     # Triangle
+                     name = '',
+                     labels = c('BTLH sightings' = 'GBIF sightings')) +
   
   # Define map extent
-  coord_sf(expand = FALSE, xlim = c(-118, -89),  ylim = c(13, 42.5)) +
+  coord_sf(expand = FALSE, 
+           xlim = c(-118, -89),  
+           ylim = c(13, 42.5)) +
   
   # Edit map's theme
-  theme_bw() +
+  theme_bw(base_size = 7) +
   theme(panel.grid.major = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        axis.text.x = element_text(size = 7),
-        axis.text.y = element_text(size = 7),
-        legend.title = element_text(size = 9),
-        legend.text = element_text(size = 9),
-        legend.key.size = unit(0.4, 'cm'),
-        legend.background = element_rect(fill = 'white', color = 'white'),
-        legend.box = "vertical",        # Stack legends vertically
-        legend.position = c(0.2, 0.2)) +  # Adjust location inside plot
+        axis.text.x  = element_text(size = 7),
+        axis.text.y  = element_text(size = 7),
+        legend.title = element_text(size = 7),
+        legend.text  = element_text(size = 7),
+        legend.key.size = unit(0.2, 'cm'),
+        legend.background = element_blank(),
+        legend.key = element_blank(),
+        legend.box.background = element_blank(),
+        legend.box = 'vertical',
+        legend.spacing.y = unit(-3, 'mm'),
+        legend.position = c(0.29, 0.12)) +  
   
   # Customize legend appearance and order
-  guides(fill = guide_legend(order = 1, 
-                             override.aes = list(alpha = 1, size = 4)),
-         shape = guide_legend(order = 2))
+  guides(fill = guide_legend(order = 1,
+                             override.aes = list(size = 3, alpha = 1)),
+         shape = guide_legend(order = 2,
+                              override.aes = list(size = 2)),
+         color = guide_legend(order = 3))
+main.map
 
-# Export map
-ggsave('output/GBIF-Mexico-data/study-sites-RMNP-Mexico.pdf', 
-       plot = main.map, width = 8, height = 6)
+# Save plot
+ggsave(path = 'output/plots',
+       filename = 'BTHU-range-GBIF-sightings.png',
+       plot = main.map,
+       device = 'png',
+       dpi = 300,
+       width = 6,
+       height = 6.5)
 
 # --------------------------- PLOT RMNP BANDING SITES ------------------------ # 
-# ------------ INCLUDING PARK'S BOUNDARY AND CONTINENTAL DIVIDE -------------- #
+# -------------------------- INCLUDING PARK'S BOUNDARY ----------------------- #
 
-# Add coordinates to sf object and nudge y and x to adjust site's labels in plot
-summer.sf <- summer.sf %>%
-  mutate(x = st_coordinates(summer.sf)[, 1], # retrieve coordinates from geometry
-         y = st_coordinates(summer.sf)[, 2],
-         nudge_y = y + 0.01,
-         nudge_x = x + 0.02)
-
-# Read shape files needed for the map:
-# RMNP boundary
-rmnp.sf <- st_read('data/sites-BTLH-range-map/RMNP-boundary/Boundary_(Line).shp')
-# Continental divide
-con.divide <- st_read('data/sites-BTLH-range-map/continental-divide/condivl020.shp')
-
+# Plot banding sites inside RMNP
 RMNP.map <- ggplot() + 
   
-  # Plot banding siteS
-  geom_sf(data = summer.sf, 
-          size = 2, 
+  # Add banding sites
+  geom_sf(data = summer.sf,
+          aes(shape = 'Banding Site'),
+          size = 1.5,
           color = 'gray18') +
   
-  # Add site's names labels
-  geom_text(data = summer.sf,
-            aes(x = nudge_x, y = nudge_y, label = site),
-            color = 'black',
-            size = 3) +
+  # Add RMNP boundary
+  geom_sf(data = rmnp.sf,
+          aes(color = 'Rocky Mountain National Park Boundary'),
+          fill = NA,
+          size = 0.5) +
   
-  # Plot RMNP boundary
-  geom_sf(data = rmnp.sf, 
-          aes(color = 'Rocky Mountain National Park'), 
-          fill = NA, 
-          size = 1, 
-          linetype = 'solid') +
+  # Set RMNP boundary color to lighter grey
+  scale_color_manual(name = '',
+                     values = c('Rocky Mountain National Park Boundary' = 'grey60')) +
   
-  # Plot continental divide
-  geom_sf(data = con.divide, 
-          aes(color = 'Continental Divide'), 
-          fill = NA, 
-          size = 1, 
-          linetype = 'dashed') +
+  # Add site labels
+  geom_text_repel(data = summer.sf,
+                  aes(label = site, geometry = geometry),
+                  stat = 'sf_coordinates',
+                  size = 2,
+                  color = 'gray18',  
+                  
+                  # Tighter label placement
+                  box.padding   = unit(0.6, 'lines'),
+                  point.padding = unit(0.5, 'lines'),
+                  max.overlaps  = Inf,
+                  
+                  # Connector lines
+                  segment.color = 'gray18', 
+                  segment.size  = 0.3,
+                  min.segment.length = 0,
+                  segment.curvature = 0) +
   
-  # Define map extent
-  coord_sf(expand = FALSE, xlim = c(-106, -105.4), ylim = c(40.1, 40.6)) +
+  # Map extent
+  coord_sf(expand = FALSE,
+           xlim = c(-106, -105.4),
+           ylim = c(40.1, 40.6)) +
   
-  # Customize color legend for lines
-  scale_color_manual(name = "", 
-                     values = c('Rocky Mountain National Park' = 'grey18',
-                                'Continental Divide' = 'darkorange')) +
+  # Shape scale
+  scale_shape_manual(name = '',
+                     values = c('Banding Site' = 16)) +
   
-  # Edit map's theme
-  theme_bw() +
+  # Fix x axis breaks
+  scale_x_continuous(breaks = c(-105.9, -105.8, -105.7, -105.6, -105.5),
+                     labels = c('105.9°W', '105.8°W', '105.7°W', '105.6°W', '105.5°W')) +
+  
+  # Theme
+  theme_bw(base_size = 7) +
   theme(panel.grid.major = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        axis.text.x = element_text(size = 7),
-        axis.text.y = element_text(size = 7),
-        legend.title = element_text(size = 9),
-        legend.text = element_text(size = 9),
-        legend.key.size = unit(0.4, 'cm'),
-        legend.background = element_rect(fill = 'white', color = 'white'),
-        legend.box = "vertical",        # Stack legends vertically
-        legend.position = c(0.2, 0.08)) 
+        axis.text.x  = element_text(size = 7),
+        axis.text.y  = element_text(size = 7),
+        legend.title = element_text(size = 7),
+        legend.text  = element_text(size = 7),
+        legend.key.size = unit(0.2, 'cm'),
+        legend.background = element_blank(),
+        legend.key = element_blank(),
+        legend.box.background = element_blank(),
+        legend.box = 'vertical',
+        legend.spacing.y = unit(-3, 'mm'),
+        legend.position = c(0.35, 0.09))
+RMNP.map
 
-# Export map
-ggsave('output/GBIF-Mexico-data/banding-sites-RMNP.pdf', 
-       plot = RMNP.map, width = 8, height = 6.5)
+# Save plot
+ggsave(path = 'output/plots',
+       filename = 'RMNP-banding-sites.png',
+       plot = RMNP.map,
+       device = 'png',
+       dpi = 300,
+       width = 8,
+       height = 5)
+
+# ------------------- COMBINE MAPS IN A TWO PANEL FIGURE --------------------- #
+
+# Combine maps
+combined.map <- main.map + RMNP.map +
+  plot_layout(ncol = 2, widths = c(1.6, 1.1)) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag = element_text(size = 10),
+
+    # spacing between panel A and B
+    panel.spacing = unit(-0.3, 'cm'),
+    
+    # outer margin of the full figure
+    plot.margin = margin(2, 2, 2, 1))
+
+combined.map
+
+# Save final figure
+ggsave(path = 'output/plots',
+       filename = 'study-sites-two-panel.png',
+       plot = combined.map,
+       device = 'png',
+       dpi = 400,
+       width = 8,   
+       height = 4.5)
