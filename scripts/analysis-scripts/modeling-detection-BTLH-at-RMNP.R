@@ -1,4 +1,4 @@
-# Modeling detection probability using a 'step-down' approach 
+# Modeling recapture probability using a 'step-down' approach 
 # with a fixed survival model
 # Following Lebreton et al. (1992)
 
