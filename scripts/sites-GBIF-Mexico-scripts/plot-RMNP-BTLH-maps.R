@@ -215,7 +215,7 @@ ggsave(path = 'output/plots',
        filename = 'RMNP-banding-sites.png',
        plot = RMNP.map,
        device = 'png',
-       dpi = 300,
+       dpi = 600,
        width = 8,
        height = 5)
 
@@ -243,3 +243,147 @@ ggsave(path = 'output/plots',
        dpi = 400,
        width = 8,   
        height = 4.5)
+
+################################################################################
+
+# Plots for presentation
+
+# Mexico
+
+# Create map
+mex.map <- ggplot() + 
+  
+   # Plot wintering range (with legend)
+  geom_sf(data = nonbreeding, 
+          aes(fill = "Wintering Grounds"),
+          color = NA) +
+  
+  # Plot borders
+  borders('world', colour = 'gray18') +
+  borders('state', colour = 'gray18') +
+  
+  # Plot GBIF sightings
+  geom_sf(data = winter.sf, 
+          aes(shape = "GBIF sightings"), 
+          size = 1.5, 
+          color = 'gray18') +
+  
+  # Define map extent (Mexico only)
+  coord_sf(expand = FALSE, 
+           xlim = c(-118, -86),  
+           ylim = c(14, 33)) +
+  
+  # Define legend scales
+  scale_fill_manual(values = c("Wintering Grounds" = '#a6d9ce'),
+                    name = "") +
+  
+  scale_shape_manual(values = c("GBIF sightings" = 17),
+                     name = "") +
+  
+  # Edit map theme
+  theme_bw(base_size = 7) +
+  theme(panel.grid.major = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x  = element_text(size = 7),
+        axis.text.y  = element_text(size = 7),
+        legend.title = element_blank(),
+        legend.text  = element_text(size = 12),
+        legend.key.size = unit(0.25, "cm"),
+        legend.position = c(0.29, 0.12))
+
+mex.map
+
+# Save map
+ggsave(filename = "output/plots/Maps/wintering-grounds-map.png",
+       plot = mex.map,
+       width = 8,
+       height = 5,
+       dpi = 600)
+
+# RMNP in US
+
+# Dummy data for legend
+legend_mexico <- data.frame(
+  x = -116,
+  y = 31,
+  fill_label = "Mexico")
+
+# Create Park map
+park.map <- ggplot() + 
+  
+  # Plot breeding grounds
+  geom_sf(data = breeding, 
+          aes(fill = "Breeding Grounds"),
+          color = NA) +
+  
+  # Plot Mexico as dark gray
+  borders("world", regions = "Mexico",
+          fill = "gray",
+          colour = "gray18") +
+  
+  # Dummy layer so Mexico appears in legend
+  geom_tile(data = legend_mexico,
+            aes(x = x, y = y, fill = fill_label),
+            alpha = 0,
+            inherit.aes = FALSE) +
+  
+  # Add RMNP boundary
+  geom_sf(data = rmnp.sf,
+          aes(color = "RMNP boundary"),
+          fill = NA,
+          size = 0.5) +
+  
+  # Plot borders
+  borders("world", colour = "gray18", fill = NA) +
+  borders("state", colour = "gray18") +
+  
+  # Define map extent: Colorado and bordering states
+  coord_sf(expand = FALSE, 
+           xlim = c(-117, -101.0),  
+           ylim = c(30, 43)) +
+  
+  # Add state labels
+  annotate("text", x = -105.6, y = 39.1, label = "Colorado", size = 4) +
+  annotate("text", x = -106.0, y = 34.5, label = "New Mexico", size = 4) +
+  annotate("text", x = -111.5, y = 39.5, label = "Utah", size = 4) +
+  annotate("text", x = -112.0, y = 34.8, label = "Arizona", size = 4) +
+  annotate("text", x = -110.0, y = 30.5, label = "Mexico", size = 4) +
+  
+  # Define legend scales
+  scale_fill_manual(values = c(
+    "Breeding Grounds" = "#f6b48f",
+    "Mexico" = "gray"
+  ), name = "") +
+  
+  scale_color_manual(values = c(
+    "RMNP boundary" = 'black'
+  ), name = "") +
+  
+  # Edit map theme
+  theme_bw(base_size = 7) +
+  theme(panel.grid.major = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x  = element_text(size = 7),
+        axis.text.y  = element_text(size = 7),
+        legend.title = element_blank(),
+        legend.text  = element_text(size = 9),
+        legend.key.size = unit(0.25, "cm"),
+        legend.position = c(0.14, 0.26)) +
+  
+  # Legend order
+  guides(fill = guide_legend(order = 1,
+                             override.aes = list(alpha = 1)),
+         color = guide_legend(order = 2))
+
+park.map
+
+# Save map
+ggsave(filename = "output/plots/Maps/RMNP-in-US.png",
+       plot = park.map,
+       width = 8,
+       height = 5,
+       dpi = 600)
+  
+
