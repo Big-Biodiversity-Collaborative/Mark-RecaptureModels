@@ -228,3 +228,66 @@ results.3$results$beta
 
 # Remove mark files so they don't clog repo
 invisible(file.remove(list.files(pattern = 'mark.*\\.(inp|out|res|vcv|tmp)$')))
+
+################################################################################
+
+# Plots for thesis presentation
+
+# Create data for the plot
+winter.plot <- winter.mx %>%
+  mutate(winter_period = factor(winter_period, levels = winter_period)) %>%
+  select(winter_period, aver_min_temp, aver_precip) %>%
+  pivot_longer(
+    cols = c(aver_min_temp, aver_precip),
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  mutate(variable = recode(
+    variable,
+    aver_min_temp = "Minimum Temperature",
+    aver_precip   = "Precipitation"
+  ))
+
+make_winter_env_plot <- function(data, var_to_show, y_lab) {
+  ggplot(
+    data %>% filter(variable == var_to_show),
+    aes(x = winter_period, y = value, color = variable, group = 1)
+  ) +
+    geom_line(linewidth = 0.6) +
+    geom_point(size = 2) +
+    scale_color_manual(values = c(
+      "Minimum Temperature" = "steelblue",
+      "Precipitation" = "darkblue"
+    )) +
+    labs(
+      x = "Winter period",
+      y = y_lab,
+      color = NULL
+    ) +
+    theme_classic() +
+    theme(
+      legend.position = "none",
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+}
+
+# Create plots
+p_winter_temp <- make_winter_env_plot(
+  data = winter.plot,
+  var_to_show = "Minimum Temperature",
+  y_lab = "Extreme minimum temperature (°C)")
+p_winter_temp
+
+p_winter_precip <- make_winter_env_plot(
+  data = winter.plot,
+  var_to_show = "Precipitation",
+  y_lab = "Total winter precipitation (mm)")
+p_winter_precip
+
+# Save plots
+ggsave(path = 'output/plots/Thesis Plots/',
+       filename = 'winter-precip.png',
+       plot = p_winter_precip,
+       device = 'png',
+       dpi = 600)
+
