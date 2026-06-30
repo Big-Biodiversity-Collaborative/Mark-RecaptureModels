@@ -105,7 +105,7 @@ winter.z <- winter.mx %>%
          winter_aver_precip = aver_precip, .keep = 'unused')
 
 summer.z <- summer.co %>% 
-  filter(!year %in% c(2002, 2012)) %>% 
+  filter(year != 2012) %>% 
   select(year, aver_max_temp, aver_min_temp) %>% 
   rename(time = year) %>% 
   mutate(summer_min_temp_z = z.stand(aver_min_temp),
@@ -116,6 +116,7 @@ summer.z <- summer.co %>%
 # Prepare covariates for Table 2 in thesis results (mean and ranges)
 
 winter.full <- winter.mx %>% 
+  filter(winter_period != '2002-2003') %>%
   select(-winter_period) %>% 
   pivot_longer(everything(), 
                names_to = 'variable', 
@@ -126,6 +127,7 @@ winter.full <- winter.mx %>%
             max  = round(max(value), 2))
 
 summer.full <- summer.co %>% 
+  filter(year != 2012) %>% 
   select(-year) %>% 
   pivot_longer(everything(),
                names_to = 'variable',
@@ -136,6 +138,7 @@ summer.full <- summer.co %>%
             max  = round(max(value), 2))  
 
 summer.swe <- summer.co.swe %>% 
+  filter(winter_period != '2011-2012') %>% 
   select(-winter_period) %>% 
   pivot_longer(everything(),
                names_to = 'variable',
@@ -667,16 +670,17 @@ Phi.plot <- ggplot(real.Phi.ests, aes(x = as.numeric(year),
   scale_linetype_manual(values = c('Juvenile' = 'solid',
                                    'Adult Female' = 'longdash',
                                    'Adult Male' = 'dotted')) +
-  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, 0.2)) +
+  scale_y_continuous(limits = c(0,0.8), breaks = seq(0, 1, 0.2)) +
   scale_x_continuous(breaks = 2003:2011) +
   labs(x = 'Year',
-       y = 'Annual survival probability (95% CI)',
+       y = 'Annual survival probability\n(95% CI)',
        shape = NULL,
        color = NULL,
        linetype = NULL) +
   theme_classic() +
-  theme(legend.position = 'right',
-        plot.title = element_text(hjust = 0.5))
+  theme(legend.position = 'inside',
+        legend.position.inside = c(0.5, 0.9),
+        legend.direction = 'horizontal')
 Phi.plot
 
 # Save plot
@@ -842,8 +846,9 @@ winter.min.temp.plot <- ggplot(pred.df.winter.min.temp,
   geom_line(size = 0.6) +
   geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.15, color = NA) +
   scale_x_continuous(breaks = seq(-2, 1, by = 0.5)) +
-  labs(x = 'Average winter minimum temperature (°C)',
-       y = 'Annual survival probability (95% CI)',
+  scale_y_continuous(limits = c(0, 0.65)) +
+  labs(x = 'Average winter extreme minimum temperature (°C)',
+       y = 'Annual survival probability\n(95% CI)',
        color = NULL,   
        fill = NULL,    
        linetype = NULL) +
@@ -857,8 +862,9 @@ winter.min.temp.plot <- ggplot(pred.df.winter.min.temp,
                                    'Adult Female' = 'longdash',
                                    'Adult Male' = 'dotted')) +
   theme_classic() +
-  theme(legend.position = 'right',
-        legend.title = element_blank()) 
+  theme(legend.position = 'inside',
+               legend.position.inside = c(0.5, 0.9),
+               legend.direction = 'horizontal') 
 winter.min.temp.plot
 
 # Save plot
@@ -921,28 +927,30 @@ summer.min.temp.plot <- ggplot(pred.df.summer.min.temp,
                                    color = Group,
                                    fill = Group,
                                    linetype = Group)) +
-  geom_line(size = 0.3) +
-  geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.1, color = NA) +
-  labs(x = 'Average summer minimum temperature (°C)',
-       y = 'Estimated survival probability\n(95% CI)',
-       color = 'Group',
-       fill = 'Group',
-       linetype = 'Group') +
-  scale_color_manual(values = c('Juvenile' = 'gray10', 
-                                'Adult Female' = 'gray26', 
-                                'Adult Male' = 'gray46')) +
-  scale_fill_manual(values = c('Juvenile' = 'gray10', 
-                               'Adult Female' = 'gray26', 
-                               'Adult Male' = 'gray46')) +
+  geom_line(size = 0.6) +
+  geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.15, color = NA) +
+  scale_x_continuous(breaks = seq(-12, -3.5, by = 1.5)) +
+  labs(x = 'Average summer extreme minimum temperature (°C)',
+       y = 'Annual survival probability (95% CI)',
+       color = NULL,   
+       fill = NULL,    
+       linetype = NULL) +
+  scale_color_manual(values = c('Juvenile' = '#009E73',     
+                                'Adult Female' = '#0072B2', 
+                                'Adult Male' = '#E69F00')) +
+  scale_fill_manual(values = c('Juvenile' = '#009E73',
+                               'Adult Female' = '#0072B2',
+                               'Adult Male' = '#E69F00')) +
   scale_linetype_manual(values = c('Juvenile' = 'solid',
                                    'Adult Female' = 'longdash',
                                    'Adult Male' = 'dotted')) +
-  scale_x_continuous(breaks = seq(-12, -3.5, by = 1.5)) +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = 'right',
+        legend.title = element_blank())
 summer.min.temp.plot
 
 # Save plot
-ggsave(path = 'output/plots/New Plots Survival/', 
+ggsave(path = 'output/plots/Thesis Plots/', 
        filename = 'summer min temp effect.png',
        plot = summer.min.temp.plot,
        device = 'png',
@@ -1001,28 +1009,30 @@ summer.max.temp.plot <- ggplot(pred.df.summer.max.temp,
                                    color = Group,
                                    fill = Group,
                                    linetype = Group)) +
-  geom_line(size = 0.3) +
-  geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.1, color = NA) +
-  labs(x = 'Average summer maximum temperature (°C)',
-       y = 'Estimated survival probability\n(95% CI)',
-       color = 'Group',
-       fill = 'Group',
-       linetype = 'Group') +
-  scale_color_manual(values = c('Juvenile' = 'gray10', 
-                                'Adult Female' = 'gray26', 
-                                'Adult Male' = 'gray46')) +
-  scale_fill_manual(values = c('Juvenile' = 'gray10', 
-                               'Adult Female' = 'gray26', 
-                               'Adult Male' = 'gray46')) +
+  geom_line(size = 0.6) +
+  geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.15, color = NA) +
+  scale_x_continuous(breaks = seq(27, 31, by = 0.5)) +
+  labs(x = 'Average summer extreme maximum temperature (°C)',
+       y = 'Annual survival probability (95% CI)',
+       color = NULL,   
+       fill = NULL,    
+       linetype = NULL) +
+  scale_color_manual(values = c('Juvenile' = '#009E73',     
+                                'Adult Female' = '#0072B2', 
+                                'Adult Male' = '#E69F00')) +
+  scale_fill_manual(values = c('Juvenile' = '#009E73',
+                               'Adult Female' = '#0072B2',
+                               'Adult Male' = '#E69F00')) +
   scale_linetype_manual(values = c('Juvenile' = 'solid',
                                    'Adult Female' = 'longdash',
                                    'Adult Male' = 'dotted')) +
-  scale_x_continuous(breaks = seq(27, 31, by = 0.5)) +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = 'right',
+        legend.title = element_blank())
 summer.max.temp.plot
 
 # Save plot
-ggsave(path = 'output/plots/New Plots Survival/', 
+ggsave(path = 'output/plots/Thesis Plots//', 
        filename = 'summer max temp effect.png',
        plot = summer.max.temp.plot,
        device = 'png',
@@ -1079,28 +1089,346 @@ winter.precip.plot <- ggplot(pred.df.winter.precip,
                                  color = Group,
                                  fill = Group,
                                  linetype = Group)) +
-  geom_line(size = 0.3) +
-  geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.1, color = NA) +
-  labs(x = 'Winter precipitation (mm)',
-       y = 'Estimated survival probability\n(95% CI)',
-       color = 'Group',
-       fill = 'Group',
-       linetype = 'Group') +
-  scale_color_manual(values = c('Juvenile' = 'gray10', 
-                                'Adult Female' = 'gray26', 
-                                'Adult Male' = 'gray46')) +
-  scale_fill_manual(values = c('Juvenile' = 'gray10', 
-                               'Adult Female' = 'gray26', 
-                               'Adult Male' = 'gray46')) +
+  geom_line(size = 0.6) +
+  geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.15, color = NA) +
+  labs(x = 'Average winter total precipitation (mm)',
+       y = 'Annual survival probability (95% CI)',
+       color = NULL,   
+       fill = NULL,    
+       linetype = NULL) +
+  scale_color_manual(values = c('Juvenile' = '#009E73',     
+                                'Adult Female' = '#0072B2', 
+                                'Adult Male' = '#E69F00')) +
+  scale_fill_manual(values = c('Juvenile' = '#009E73',
+                               'Adult Female' = '#0072B2',
+                               'Adult Male' = '#E69F00')) +
   scale_linetype_manual(values = c('Juvenile' = 'solid',
                                    'Adult Female' = 'longdash',
                                    'Adult Male' = 'dotted')) +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = 'right',
+        legend.title = element_blank())
 winter.precip.plot
 
 # Save plot
-ggsave(path = 'output/plots/New Plots Survival/',
+ggsave(path = 'output/plots/Thesis Plots/',
        filename = 'winter precip effect.png',
        plot = winter.precip.plot,
        device = 'png',
        dpi = 300)
+
+# Create a multi-panel figure showing the effect of the three less significant
+# covariates 
+
+library(cowplot)
+
+a <- plot_grid(
+  summer.min.temp.plot + theme(axis.title.y = element_blank(), legend.position = "none"),
+  summer.max.temp.plot + theme(axis.title.y = element_blank(), legend.position = "none"),
+  winter.precip.plot  + theme(axis.title.y = element_blank(), legend.position = "none"),
+  ncol  = 1,
+  align = "v",       # vertical alignment
+  axis  = "lr"       # keep left/right axes aligned
+)
+
+a
+
+# Save plot
+ggsave(path = 'output/plots/Thesis Plots/',
+       filename = 'example.1.png',
+       plot = a,
+       device = 'png',
+       dpi = 300)
+
+ggsave(
+  filename = "example.1.png",
+  plot     = a,     # or 'a' if you don't have legend
+  path     = "output/plots/Thesis Plots/",
+  device   = "png",
+  dpi      = 300,
+  width    = 7,    # inches
+  height   = 8     # adjust until it looks right
+)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Plot selected covariates
+
+# Create data frames
+winter.covars <- winter.mx %>% 
+  filter(winter_period != '2002-2003') %>%
+  select(winter_period, aver_min_temp, aver_precip) %>% 
+  mutate(start_year = as.integer(str_sub(winter_period, 1, 4)))  # Numeric for plotting
+
+summer.covars <-summer.co %>% 
+  filter(year != 2012) %>% 
+  select(year, aver_max_temp, aver_min_temp) %>% 
+  mutate(year = as.numeric(year))
+
+# Plot winter covars
+
+# First, find a scaling factor so both plots fit in similar ranges
+w.scale.factor <- max(winter.covars$aver_min_temp, na.rm = TRUE) /
+  max(winter.covars$aver_precip, na.rm = TRUE)
+
+winter.covars.plot <- ggplot(winter.covars, aes(x = start_year)) +
+  geom_line(aes(y = aver_min_temp, color = "Minimum Temperature"), size = 0.6) +
+  geom_point(aes(y = aver_min_temp, color = "Minimum Temperature"), size = 2, shape = 18) +
+  geom_line(aes(y = aver_precip * w.scale.factor, color = "Precipitation"), size = 0.6) +
+  geom_point(aes(y = aver_precip * w.scale.factor, color = "Precipitation"), size = 2, shape = 18) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  scale_y_continuous(name = "Minimum extreme temperature (°C)",
+                     sec.axis = sec_axis(~ . / w.scale.factor,
+                                         name = "Total precipitation (mm)")) +
+  scale_x_continuous(breaks = winter.covars$start_year,
+                     labels = winter.covars$winter_period) +
+  scale_color_manual(values = c("Minimum Temperature" = "steelblue",
+                                "Precipitation" = "darkblue")) +
+  labs(x = "Winter period", color = NULL) +
+  theme_minimal() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top")
+winter.covars.plot
+
+# Save plot
+ggsave(path = 'output/plots/Thesis Plots/',
+       filename = 'winter covars.png',
+       plot = winter.covars.plot,
+       device = 'png',
+       dpi = 300,
+       bg = 'white')
+
+# Plot summer covars 
+
+# First, find a scaling factor so both plots fit in similar ranges
+s.scale.factor <- max(summer.covars$aver_max_temp, na.rm = TRUE) / 
+  abs(min(summer.covars$aver_min_temp, na.rm = TRUE))
+
+summer.covars.plot <- ggplot(summer.covars, aes(x = year)) +
+  geom_line(aes(y = aver_max_temp, color = "Maximum Temperature"), size = 0.6) +
+  geom_point(aes(y = aver_max_temp, color = "Maximum Temperature"), size = 2, shape = 18) +
+  geom_line(aes(y = aver_min_temp * s.scale.factor, color = "Minimum Temperature"), size = 0.6) +
+  geom_point(aes(y = aver_min_temp * s.scale.factor, color = "Minimum Temperature"), size = 2, shape = 18) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  scale_y_continuous(name = "Maximum extreme temperature (°C)",
+                     sec.axis = sec_axis(~ . / s.scale.factor,
+                                         name = "Minimum extreme temperature (°C)")) +
+  scale_x_continuous(breaks = summer.covars$year) +
+  scale_color_manual(values = c("Maximum Temperature" = "brown1",
+                                "Minimum Temperature" = "steelblue")) +
+  labs(x = "Summer Year", color = NULL) +
+  theme_minimal() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top")
+summer.covars.plot
+
+# Save plot
+ggsave(path = 'output/plots/Thesis Plots/',
+       filename = 'summer covars.png',
+       plot = summer.covars.plot,
+       device = 'png',
+       dpi = 300,
+       bg = 'white')
+
+
+
+
+
+
+
+# Set factor order so legend appears in the order you want
+real.Phi.ests <- real.Phi.ests %>%
+  mutate(group = factor(group,
+                        levels = c("Juvenile", "Adult Male", "Adult Female")))
+
+# Common plotting function
+make_phi_plot <- function(data, groups_to_show) {
+  ggplot(data %>% filter(group %in% groups_to_show),
+         aes(x = as.numeric(year),
+             y = estimate,
+             color = group,
+             shape = group,
+             linetype = group)) +
+    geom_line(aes(group = group), linewidth = 0.6) +
+    geom_point(size = 2) +
+    geom_errorbar(aes(ymin = lcl, ymax = ucl), width = 0, linewidth = 0.3) +
+    scale_color_manual(values = c(
+      "Juvenile" = "#009E73",
+      "Adult Male" = "#E69F00",
+      "Adult Female" = "#0072B2"
+    ),
+    breaks = c("Juvenile", "Adult Male", "Adult Female")) +
+    scale_shape_manual(values = c(
+      "Juvenile" = 15,
+      "Adult Male" = 19,
+      "Adult Female" = 17
+    ),
+    breaks = c("Juvenile", "Adult Male", "Adult Female")) +
+    scale_linetype_manual(values = c(
+      "Juvenile" = "solid",
+      "Adult Male" = "dotted",
+      "Adult Female" = "longdash"
+    ),
+    breaks = c("Juvenile", "Adult Male", "Adult Female")) +
+    scale_y_continuous(limits = c(0, 0.8), breaks = seq(0, 0.8, 0.2)) +
+    scale_x_continuous(breaks = 2003:2011) +
+    labs(
+      x = "Year",
+      y = "Annual survival probability\n(95% CI)",
+      color = NULL,
+      shape = NULL,
+      linetype = NULL
+    ) +
+    theme_classic() +
+    theme(
+      legend.position = "inside",
+      legend.position.inside = c(0.5, 0.92),
+      legend.direction = "horizontal"
+    )
+}
+
+# Slide 1: Juveniles only
+Phi.slide1 <- make_phi_plot(real.Phi.ests, c("Juvenile"))
+
+# Slide 2: Juveniles + Adult Males
+Phi.slide2 <- make_phi_plot(real.Phi.ests, c("Juvenile", "Adult Male"))
+
+# Slide 3: Juveniles + Adult Males + Adult Females
+Phi.slide3 <- make_phi_plot(real.Phi.ests, c("Juvenile", "Adult Male", "Adult Female"))
+
+# Show plots
+Phi.slide1
+Phi.slide2
+Phi.slide3
+
+# Save plot
+ggsave(path = 'output/plots/Thesis Plots/',
+       filename = 'juvenile+male+female.png',
+       plot = Phi.slide3,
+       device = 'png',
+       dpi = 600)
+
+# Axis plot
+axis.plot <- ggplot() +
+  scale_x_continuous(
+    limits = c(2003, 2011),
+    breaks = 2003:2011
+  ) +
+  scale_y_continuous(
+    limits = c(0, 0.8),
+    breaks = seq(0, 0.8, 0.2)
+  ) +
+  labs(
+    x = "Year",
+    y = "Annual survival probability\n(95% CI)"
+  ) +
+  theme_classic()
+
+axis.plot
+
+ggsave(path = 'output/plots/Thesis Plots/',
+       filename = 'axis.png',
+       plot = axis.plot,
+       device = 'png',
+       dpi = 600)
+
+# Main graphics
+
+# Data
+age <- tibble(
+  class = c("Juveniles", "Adults"),
+  count = c(1338, 8169)
+)
+
+sex <- tibble(
+  sex = c("Females", "Males"),
+  count = c(6884, 2623)
+)
+
+# Age class plot
+age_plot <- ggplot(age, aes(x = class, y = count, fill = class)) +
+  geom_col(width = 0.6) +
+  geom_text(aes(label = count), vjust = -0.4, size = 4) +
+  scale_fill_manual(values = c(
+    "Juveniles" = "#009E73",
+    "Adults" = "#CC79A7"
+  )) +
+  labs(
+    x = NULL,
+    y = "Number of individuals"
+  ) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(size = 11),
+    axis.text.y = element_text(size = 11),
+    axis.title.y = element_text(size = 12)
+  ) +
+  expand_limits(y = max(age$count) * 1.1)
+
+# Sex plot
+sex_plot <- ggplot(sex, aes(x = sex, y = count, fill = sex)) +
+  geom_col(width = 0.6) +
+  geom_text(aes(label = count), vjust = -0.4, size = 4) +
+  scale_fill_manual(values = c(
+    "Females" = "#0072B2",
+    "Males" = "#E69F00"
+  )) +
+  labs(
+    x = NULL,
+    y = "Number of individuals"
+  ) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(size = 11),
+    axis.text.y = element_text(size = 11),
+    axis.title.y = element_text(size = 12)
+  ) +
+  expand_limits(y = max(sex$count) * 1.1)
+
+# Show plots
+age_plot
+sex_plot
+
+# Save plots
+ggsave(path = 'output/plots/Thesis Plots/',
+       filename = 'sex-plot.png',
+       plot = sex_plot,
+       device = 'png',
+       dpi = 600)
+
+# Longevity in my data set
+longevity <- dat %>%
+  distinct(band, year) %>%
+  group_by(band) %>%
+  summarize(first_year = min(year),
+            last_year  = max(year),
+            years_known_alive = last_year - first_year + 1,
+            n_years_detected = n_distinct(year), .groups = 'drop') %>%
+  arrange(desc(years_known_alive))
+
+longevity
+
+# How many individuals per number of years
+longevity.counts <- longevity %>%
+  count(years_known_alive, name = 'n_individuals') %>%
+  arrange(years_known_alive)
+
+longevity.counts
+
+# Counts
+#              Years        Counts
+#                 1          7586
+#                 2          1010
+#                 3           496
+#                 4           230
+#                 5           115
+#                 6            47
+#                 7            15
+#                 8             7
+#                 9             1
+
+
