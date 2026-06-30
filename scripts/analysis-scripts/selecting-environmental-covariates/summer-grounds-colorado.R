@@ -350,3 +350,72 @@ correlated.covars.results
 
 # Remove mark files so they don't clog repo
 invisible(file.remove(list.files(pattern = 'mark.*\\.(inp|out|res|vcv|tmp)$')))
+
+################################################################################
+
+# Plots for thesis presentation
+
+# Create data for the plot
+summer.plot <- summer.co %>%
+  select(year, aver_max_temp, aver_min_temp, aver_precip) %>%
+  pivot_longer(
+    cols = c(aver_max_temp, aver_min_temp, aver_precip),
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  mutate(variable = recode(
+    variable,
+    aver_max_temp = "Maximum Temperature",
+    aver_min_temp = "Minimum Temperature",
+    aver_precip   = "Precipitation"
+  ))
+
+make_summer_env_plot <- function(data, var_to_show, y_lab) {
+  ggplot(
+    data %>% filter(variable == var_to_show),
+    aes(x = year, y = value, color = variable, group = 1)
+  ) +
+    geom_line(linewidth = 0.6) +
+    geom_point(size = 2) +
+    scale_color_manual(values = c(
+      "Maximum Temperature" = "brown1",
+      "Minimum Temperature" = "steelblue",
+      "Precipitation" = "darkblue"
+    )) +
+    scale_x_continuous(breaks = 2003:2012) +
+    labs(
+      x = "Year",
+      y = y_lab,
+      color = NULL
+    ) +
+    theme_classic() +
+    theme(
+      legend.position = "none"
+    )
+}
+
+# Create plots
+p_summer_max <- make_summer_env_plot(
+  data = summer.plot,
+  var_to_show = "Maximum Temperature",
+  y_lab = "Extreme maximum temperature (°C)")
+p_summer_max
+
+p_summer_min <- make_summer_env_plot(
+  data = summer.plot,
+  var_to_show = "Minimum Temperature",
+  y_lab = "Extreme minimum temperature (°C)")
+p_summer_min
+
+p_summer_precip <- make_summer_env_plot(
+  data = summer.plot,
+  var_to_show = "Precipitation",
+  y_lab = "Total summer precipitation (mm)")
+p_summer_precip
+
+# Save plots
+ggsave(path = 'output/plots/Thesis Plots/',
+       filename = 'summerr-max-temp.png',
+       plot = p_summer_max,
+       device = 'png',
+       dpi = 600)
