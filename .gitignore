@@ -37,3 +37,7 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+output/weather-data/daymet-tiles-summer/
+output/weather-data/daymet-tiles-winter/
+.RDataTmp
+*.nc
