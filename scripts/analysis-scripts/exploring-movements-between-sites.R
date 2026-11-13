@@ -13,7 +13,7 @@ rm(list = ls())
 
 # Load data
 raw.dat <- read.csv('output/capture-data/cleanded-capture-data-RMNP-full.csv')
-sites.df <- read.csv('data/sites-BTLH-range-map-dem/RMNP-sites-data.csv')
+sites.df <- read.csv('data/sites-BTLH-range-map/RMNP-sites-data.csv')
 
 # Add two new sites identified in script 'merge-cleaned-banded-recaptured-data-RMNP' 
 # where birds were recaptured 
